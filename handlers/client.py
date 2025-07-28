@@ -6,7 +6,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 
 from core.models import async_session
-from core.crud import create_user, get_tasks_by_user, create_task, delete_task, get_stat, get_done_tasks_by_user, update_task, get_user_by_tg_id
+from core.crud import create_user, get_tasks_by_user, create_task, delete_task, get_stat, get_done_tasks_by_user, update_task, get_user_by_tg_id, get_task_by_id
 from kb.kb import cancel_kb, main_kb, done_task_kb, not_done_task_kb, edit_task_kb
 import locale
 
@@ -70,7 +70,9 @@ async def done_handler(callback_query):
 async def edit_task(callback_query, state: FSMContext):
     task_id = int(callback_query.data.split(":")[1])
     await state.update_data(task_id=task_id)
-    await callback_query.message.edit_text("Что необходимо изменить?", reply_markup=edit_task_kb())
+    async with async_session() as session:
+        task = await get_task_by_id(session=session, task_id=task_id)
+    await callback_query.message.edit_text(f"{task.title} : {task.description}\nВремя окончания {'бессрочно' if task.time_end is None else task.time_end}\n\nЧто необходимо изменить?", reply_markup=edit_task_kb())
     await state.set_state(Edit.choose)
 
 @r.callback_query(Edit.choose, F.data == 'title')
@@ -85,13 +87,15 @@ async def edit_title(message: Message, state: FSMContext):
     task_id = data.get('task_id')
     async with async_session() as session:
         await update_task(session=session, task_id=task_id, title=title)
+        task = await get_task_by_id(session=session, task_id=task_id)
     await message.answer('Заголовок обновлен!')
-    await message.answer("Что необходимо изменить?", reply_markup=edit_task_kb())
+    await message.answer(f"{task.title} : {task.description}\nВремя окончания {'бессрочно' if task.time_end is None else task.time_end}\n\nЧто необходимо изменить?", reply_markup=edit_task_kb())
+    await state.set_state(Edit.choose)
     
-@r.callback_query(Edit.choose, F.data("descr"))
+@r.callback_query(Edit.choose, F.data == "descr")
 async def edit_descr(callback_query, state: FSMContext):
     await callback_query.message.edit_text('Введите описание', reply_markup=cancel_kb)
-    await state.set_state(Edit.enter_description)
+    await state.set_state(Edit.enter_descr)
 
 @r.message(Edit.enter_descr)
 async def edit_descr(message: Message, state: FSMContext):
@@ -100,10 +104,12 @@ async def edit_descr(message: Message, state: FSMContext):
     task_id = data.get('task_id')
     async with async_session() as session:
         await update_task(session=session, task_id=task_id, description=descr)
+        task = await get_task_by_id(session=session, task_id=task_id)
     await message.answer('Описание обновлено!')
-    await message.answer("Что необходимо изменить?", reply_markup=edit_task_kb())
+    await message.answer(f"{task.title} : {task.description}\nВремя окончания {'бессрочно' if task.time_end is None else task.time_end}\n\nЧто необходимо изменить?", reply_markup=edit_task_kb())
+    await state.set_state(Edit.choose)
 
-@r.callback_query(Edit.choose, F.data("notif"))
+@r.callback_query(Edit.choose, F.data == "notif")
 # TODO написать обработчик для выдачи состояния уведомления а потом получение нового времени уведомления и записи его в состояние
 
 
@@ -115,7 +121,7 @@ async def edit_descr(message: Message, state: FSMContext):
 #     is_done: bool = None,
 #     time_end: datetime = None
 # ): 
-# которая уже импортирована в
+# которая уже импортирована в файл
 
 @r.callback_query(F.data.startswith("not_done:"))
 async def done_handler(callback_query):
