@@ -11,7 +11,18 @@ cancel_kb = InlineKeyboardMarkup(
 def done_task_kb(task_id: int):
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Выполнено", callback_data=f"done:{task_id}")]
+            [InlineKeyboardButton(text="Выполнено", callback_data=f"done:{task_id}")],
+            [InlineKeyboardButton(text="Изменить", callback_data=f"edit:{task_id}")]
+        ]
+    )
+
+def edit_task_kb():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Заголовок", callback_data=f"title")],
+            [InlineKeyboardButton(text="Описание", callback_data=f"descr")],
+            [InlineKeyboardButton(text="Напоминание", callback_data=f"notif")],
+            [InlineKeyboardButton(text="Отмена", callback_data="cancel")]
         ]
     )
 

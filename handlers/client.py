@@ -7,7 +7,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 from core.models import async_session
 from core.crud import create_user, get_tasks_by_user, create_task, delete_task, get_stat, get_done_tasks_by_user, update_task, get_user_by_tg_id
-from kb.kb import cancel_kb, main_kb, done_task_kb, not_done_task_kb
+from kb.kb import cancel_kb, main_kb, done_task_kb, not_done_task_kb, edit_task_kb
 import locale
 
 locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
@@ -17,6 +17,12 @@ class Form(StatesGroup):
     enter_description = State()
     enter_endtime = State()
     del_task = State()
+
+class Edit(StatesGroup):
+    choose = State()
+    enter_title = State()
+    enter_descr = State()
+    enter_endtime = State()
 
 r = Router()
 
@@ -60,6 +66,48 @@ async def done_handler(callback_query):
     await callback_query.message.edit_text("Задача отмечена как выполненная!")
     await callback_query.answer()
 
+@r.callback_query(F.data.startswith("edit:"))
+async def edit_task(callback_query, state: FSMContext):
+    task_id = int(callback_query.data.split(":")[1])
+    await state.update_data(task_id=task_id)
+    await callback_query.message.edit_text("Что необходимо изменить?", reply_markup=edit_task_kb())
+    await state.set_state(Edit.choose)
+
+@r.callback_query(Edit.choose, F.data == 'title')
+async def edit_title(callback_query, state: FSMContext):
+    await callback_query.message.edit_text('Введите заголовок', reply_markup=cancel_kb)
+    await state.set_state(Edit.enter_title)
+
+@r.message(Edit.enter_title)
+async def edit_title(message: Message, state: FSMContext):
+    title = message.text
+    data = await state.get_data()
+    task_id = data.get('task_id')
+    print(task_id)
+    async with async_session() as session:
+        await update_task(session=session, task_id=task_id, title=title)
+    await message.answer('Заголовок обновлен!')
+    await message.answer("Что необходимо изменить?", reply_markup=edit_task_kb())
+    
+@r.callback_query(Edit.choose, F.data("descr"))
+async def edit_descr(callback_query, state: FSMContext):
+    await callback_query.message.edit_text('Введите описание', reply_markup=cancel_kb)
+    await state.set_state(Edit.enter_description)
+
+
+@r.callback_query(Edit.choose, F.data("notif"))
+# TODO написать обработчик для выдачи состояния уведомления а потом получение нового времени уведомления и записи его в состояние
+
+
+# TODO написать обработчик edit:done чтобы изменять таску с помощью функции async def update_task(
+#     session: AsyncSession,
+#     task_id: int,
+#     title: str = None,
+#     description: str = None,
+#     is_done: bool = None,
+#     time_end: datetime = None
+# ): 
+# которая уже импортирована в
 
 @r.callback_query(F.data.startswith("not_done:"))
 async def done_handler(callback_query):
