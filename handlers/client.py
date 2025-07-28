@@ -10,6 +10,8 @@ from core.crud import create_user, get_tasks_by_user, create_task, delete_task, 
 from kb.kb import cancel_kb, main_kb, done_task_kb, not_done_task_kb, edit_task_kb
 import locale
 
+from other.dateparser import parse_datetime
+
 locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
 class Form(StatesGroup):
@@ -110,18 +112,30 @@ async def edit_descr(message: Message, state: FSMContext):
     await state.set_state(Edit.choose)
 
 @r.callback_query(Edit.choose, F.data == "notif")
-# TODO написать обработчик для выдачи состояния уведомления а потом получение нового времени уведомления и записи его в состояние
+async def edit_notif(callback_query, state: FSMContext):
+    await callback_query.message.edit_text('Напишите когда напомнить о таске', reply_markup=cancel_kb)
+    await state.set_state(Edit.enter_endtime)
 
 
-# TODO написать обработчик edit:done чтобы изменять таску с помощью функции async def update_task(
-#     session: AsyncSession,
-#     task_id: int,
-#     title: str = None,
-#     description: str = None,
-#     is_done: bool = None,
-#     time_end: datetime = None
-# ): 
-# которая уже импортирована в файл
+@r.message(Edit.enter_endtime)
+async def edit_notif(message: Message, state: FSMContext):
+    date = message.text
+    dt = await parse_datetime(date)
+
+    if dt is None:
+        await message.answer('Не удалось распознать дату, напишите, пожалуйста, в виде\n31.12.2025 14:30\nзавтра в 15:00\nчерез 2 часа\n2025-12-31 14:30')
+
+    data = await state.get_data()
+    task_id = data.get('task_id')
+
+    async with async_session() as session:
+        await update_task(session=session, task_id=task_id, time_end=dt)
+        task = await get_task_by_id(session=session, task_id=task_id)
+    
+    await message.answer('Время окончания обновлено!')
+    await message.answer(f"{task.title} : {task.description}\nВремя окончания {'бессрочно' if task.time_end is None else task.time_end}\n\nЧто необходимо изменить?", reply_markup=edit_task_kb())
+    await state.set_state(Edit.choose)
+
 
 @r.callback_query(F.data.startswith("not_done:"))
 async def done_handler(callback_query):
