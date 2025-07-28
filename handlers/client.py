@@ -83,7 +83,6 @@ async def edit_title(message: Message, state: FSMContext):
     title = message.text
     data = await state.get_data()
     task_id = data.get('task_id')
-    print(task_id)
     async with async_session() as session:
         await update_task(session=session, task_id=task_id, title=title)
     await message.answer('Заголовок обновлен!')
@@ -94,6 +93,15 @@ async def edit_descr(callback_query, state: FSMContext):
     await callback_query.message.edit_text('Введите описание', reply_markup=cancel_kb)
     await state.set_state(Edit.enter_description)
 
+@r.message(Edit.enter_descr)
+async def edit_descr(message: Message, state: FSMContext):
+    descr = message.text
+    data = await state.get_data()
+    task_id = data.get('task_id')
+    async with async_session() as session:
+        await update_task(session=session, task_id=task_id, description=descr)
+    await message.answer('Описание обновлено!')
+    await message.answer("Что необходимо изменить?", reply_markup=edit_task_kb())
 
 @r.callback_query(Edit.choose, F.data("notif"))
 # TODO написать обработчик для выдачи состояния уведомления а потом получение нового времени уведомления и записи его в состояние
