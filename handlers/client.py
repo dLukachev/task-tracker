@@ -7,7 +7,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 from core.models import async_session
 from core.crud import create_user, get_tasks_by_user, create_task, delete_task, get_stat, get_done_tasks_by_user, update_task, get_user_by_tg_id, get_task_by_id
-from kb.kb import cancel_kb, main_kb, done_task_kb, not_done_task_kb, edit_task_kb
+from kb.kb import cancel_kb, main_kb, done_task_kb, not_done_task_kb, edit_task_kb, skip_kb
 import locale
 
 from other.dateparser import parse_datetime
@@ -56,7 +56,7 @@ async def help(message: Message):
 @r.callback_query(F.data == "cancel")
 async def cancel_handler(callback_query, state: FSMContext):
     await state.clear()
-    await callback_query.message.edit_text("Действие отменено. Напишите /help для получения информации по командам")
+    await callback_query.message.edit_text("Действие отменено.")
     await callback_query.answer()
 
 
@@ -196,16 +196,28 @@ async def enter_title(message: Message, state: FSMContext):
 
 @r.message(Form.enter_description)
 async def enter_description(message: Message, state: FSMContext):
+    await message.answer('Введите время для напоминания о таске', reply_markup=skip_kb)
     await state.update_data(description = message.text)
-    
+    await state.set_state(Form.enter_endtime)
+
+
+@r.message(Form.enter_endtime)
+async def enter_endtime(message: Message, state: FSMContext):
+    if message.text == 'Не напоминать':
+        await state.update_data(time_end = None)
+    else:
+        dt = await parse_datetime(message.text)
+        if dt is None:
+            await message.answer("Неверный формат даты, попробуйте снова")
+            return
+
+    await state.update_data(time_end = dt)
+
     data = await state.get_data()
-
     async with async_session() as session:
-        await create_task(session=session, user_id=message.from_user.id, title=data.get('title'), description=data.get('description'))
-    
+        await create_task(session=session, user_id=message.from_user.id, title=data.get('title'), description=data.get('description'), time_end=data.get('time_end'))
     await state.clear()
-
-    await message.answer(f'Создано!')
+    await message.answer(f'Создано!', reply_markup=main_kb)
     await get_task(message)
 
 

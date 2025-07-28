@@ -41,3 +41,10 @@ main_kb = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True, one_time_keyboard=True
 )
+
+skip_kb = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Не напоминать")]
+    ],
+    resize_keyboard=True, one_time_keyboard=True
+)
