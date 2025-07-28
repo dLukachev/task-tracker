@@ -3,3 +3,4 @@
 .vevn
 *.pyc
 *.db
+.DS_Store
