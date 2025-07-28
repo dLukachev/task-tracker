@@ -74,7 +74,7 @@ async def edit_task(callback_query, state: FSMContext):
     await state.update_data(task_id=task_id)
     async with async_session() as session:
         task = await get_task_by_id(session=session, task_id=task_id)
-    await callback_query.message.edit_text(f"{task.title} : {task.description}\nВремя окончания {'бессрочно' if task.time_end is None else task.time_end}\n\nЧто необходимо изменить?", reply_markup=edit_task_kb())
+    await callback_query.message.edit_text(f"{task.title} : {task.description}\nВыполнить до {f"{task.time_end.strftime('%-d %B в %H:%M') if task.time_end is not None else 'бессрочно'}"}\n\nЧто необходимо изменить?", reply_markup=edit_task_kb())
     await state.set_state(Edit.choose)
 
 @r.callback_query(Edit.choose, F.data == 'title')
@@ -91,7 +91,7 @@ async def edit_title(message: Message, state: FSMContext):
         await update_task(session=session, task_id=task_id, title=title)
         task = await get_task_by_id(session=session, task_id=task_id)
     await message.answer('Заголовок обновлен!')
-    await message.answer(f"{task.title} : {task.description}\nВремя окончания {'бессрочно' if task.time_end is None else task.time_end}\n\nЧто необходимо изменить?", reply_markup=edit_task_kb())
+    await message.answer(f"{task.title} : {task.description}\nВыполнить до {f"{task.time_end.strftime('%-d %B в %H:%M') if task.time_end is not None else 'бессрочно'}"}\n\nЧто необходимо изменить?", reply_markup=edit_task_kb())
     await state.set_state(Edit.choose)
     
 @r.callback_query(Edit.choose, F.data == "descr")
@@ -108,7 +108,7 @@ async def edit_descr(message: Message, state: FSMContext):
         await update_task(session=session, task_id=task_id, description=descr)
         task = await get_task_by_id(session=session, task_id=task_id)
     await message.answer('Описание обновлено!')
-    await message.answer(f"{task.title} : {task.description}\nВремя окончания {'бессрочно' if task.time_end is None else task.time_end}\n\nЧто необходимо изменить?", reply_markup=edit_task_kb())
+    await message.answer(f"{task.title} : {task.description}\nВыполнить до {f"{task.time_end.strftime('%-d %B в %H:%M') if task.time_end is not None else 'бессрочно'}"}\n\nЧто необходимо изменить?", reply_markup=edit_task_kb())
     await state.set_state(Edit.choose)
 
 @r.callback_query(Edit.choose, F.data == "notif")
@@ -122,6 +122,8 @@ async def edit_notif(message: Message, state: FSMContext):
     date = message.text
     dt = await parse_datetime(date)
 
+    print(dt)
+
     if dt is None:
         await message.answer('Не удалось распознать дату, напишите, пожалуйста, в виде\n31.12.2025 14:30\nзавтра в 15:00\nчерез 2 часа\n2025-12-31 14:30')
 
@@ -133,7 +135,7 @@ async def edit_notif(message: Message, state: FSMContext):
         task = await get_task_by_id(session=session, task_id=task_id)
     
     await message.answer('Время окончания обновлено!')
-    await message.answer(f"{task.title} : {task.description}\nВремя окончания {'бессрочно' if task.time_end is None else task.time_end}\n\nЧто необходимо изменить?", reply_markup=edit_task_kb())
+    await message.answer(f"{task.title} : {task.description}\nВыполнить до {f"{task.time_end.strftime('%-d %B в %H:%M') if task.time_end is not None else 'бессрочно'}"}\n\nЧто необходимо изменить?", reply_markup=edit_task_kb())
     await state.set_state(Edit.choose)
 
 
