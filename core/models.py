@@ -27,3 +27,4 @@ class Task(Base):
     time_end = Column(DateTime, nullable=True)
     create_time = Column(DateTime, default=datetime.utcnow)
     user = relationship("User", back_populates="tasks")
+
