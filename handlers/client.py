@@ -125,7 +125,7 @@ async def edit_notif(message: Message, state: FSMContext):
     print(dt)
 
     if dt is None:
-        await message.answer('Не удалось распознать дату, напишите, пожалуйста, в виде\n31.12.2025 14:30\nзавтра в 15:00\nчерез 2 часа\n2025-12-31 14:30')
+        await message.answer('Не удалось распознать дату, напишите, пожалуйста, в виде\n\n31.12.2025 14:30\nзавтра в 15:00\nчерез 2 часа')
 
     data = await state.get_data()
     task_id = data.get('task_id')
