@@ -6,7 +6,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 
 from core.models import async_session
-from core.crud import create_user, get_tasks_by_user, create_task, delete_task, get_stat, get_done_tasks_by_user, update_task, get_user_by_tg_id, get_task_by_id
+from core.crud import create_user, get_tasks_by_user, create_task, delete_task, get_stat, get_done_tasks_by_user, update_task, get_user_by_tg_id, get_task_by_id, get_unfulfilled_tasks_by_user
 from kb.kb import cancel_kb, main_kb, done_task_kb, not_done_task_kb, edit_task_kb, skip_kb
 import locale
 
@@ -151,7 +151,7 @@ async def done_handler(callback_query):
 @r.message(Command('get_task'))
 async def get_task(message: Message):
     async with async_session() as session:
-        tasks = await get_tasks_by_user(session=session, user_id=message.from_user.id)
+        tasks = await get_unfulfilled_tasks_by_user(session=session, user_id=message.from_user.id)
 
     if not tasks:
         await message.answer('У тебя нет задач.')
@@ -161,8 +161,6 @@ async def get_task(message: Message):
     
     for item in tasks:
         task = (f'Номер таски {item.id}\n{item.title} : {item.description}\nДата создания {f"{item.create_time.strftime('%-d %B в %H:%M') if item.create_time is not None else 'бессрочно'}"}\nВыполнить до {f"{item.time_end.strftime('%-d %B в %H:%M') if item.time_end is not None else 'бессрочно'}"}\n\n')
-        if item.is_done:
-            continue
         await message.answer(task, reply_markup=done_task_kb(item.id))
 
 

@@ -53,6 +53,10 @@ async def get_tasks_by_user(session: AsyncSession, user_id: int):
     result = await session.execute(select(Task).where(Task.user_id == user_id))
     return result.scalars().all()
 
+async def get_unfulfilled_tasks_by_user(session: AsyncSession, user_id: int):
+    result = await session.execute(select(Task).where(Task.user_id == user_id, Task.is_done == False))
+    return result.scalars().all()
+
 async def get_done_tasks_by_user(session: AsyncSession, user_id: int):
     result = await session.execute(select(Task).where(Task.user_id == user_id, Task.is_done == True))
     return result.scalars().all()
