@@ -6,8 +6,8 @@ from aiogram.fsm.state import State, StatesGroup
 
 
 from core.models import async_session
-from core.crud import create_user, get_tasks_by_user, create_task, delete_task, get_stat, get_done_tasks_by_user, update_task, get_user_by_tg_id, get_task_by_id, get_unfulfilled_tasks_by_user
-from kb.kb import cancel_kb, main_kb, done_task_kb, not_done_task_kb, edit_task_kb, skip_kb
+from core.crud import create_user, create_task, delete_task, get_stat, get_done_tasks_by_user, update_task, get_user_by_tg_id, get_task_by_id, get_unfulfilled_tasks_by_user
+from kb.kb import cancel_kb, main_kb, done_task_kb, not_done_task_kb, edit_task_kb, skip_kb, confirm_delete
 import locale
 
 from other.dateparser import parse_datetime
@@ -35,7 +35,6 @@ async def start(message: Message):
                          '/get_task - получить задачи\n'
                          '/get_done_task - посмотреть выполненные задачи\n'
                          '/create_task - создать задачу\n'
-                         '/delete_task id - удалить задачу\n'
                          '/get_stat - статистика выполненных/просроченных задач', reply_markup=main_kb)
     # Добавление нового пользователя
     async with async_session() as session:
@@ -49,7 +48,6 @@ async def help(message: Message):
                          '/get_task - получить задачи\n'
                          '/get_done_task - посмотреть выполненные задачи\n'
                          '/create_task - создать задачу\n'
-                         '/delete_task id - удалить задачу\n'
                          '/get_stat - статистика выполненных/просроченных задач', reply_markup=main_kb)
 
 
@@ -220,28 +218,29 @@ async def enter_endtime(message: Message, state: FSMContext):
     await get_task(message)
 
 
-@r.message(Command('delete_task'))
-async def def_delete_task(message: Message, state: FSMContext):
-    await message.answer('Напиши только номер(а) задач(и) для удаления\n'
-                         'Если нужно удалить сразу несколько, то напишите айди просто через пробел, например: 1 44 912 33', reply_markup=cancel_kb)
-    await state.set_state(Form.del_task)
+@r.callback_query(F.data.startswith("confirm:"))
+async def def_delete_task(callback_query):
+    task_id = int(callback_query.data.split(":")[1])
+    await callback_query.message.edit_text('Вы уверены что хотите удалить задачу? Ее больше не восстановить!', reply_markup=confirm_delete(task_id))
 
 
-@r.message(Form.del_task)
-async def del_task_in_state(message: Message, state: FSMContext):
+@r.callback_query(F.data.startswith("delete:"))
+async def del_task_in_state(callback_query):
 
-    mes = message.text
-    tasks = mes.split()
+    try:
+        task_id = int(callback_query.data.split(":")[1])
+    except:
+        task_id = int(callback_query.data.split("::")[1])
+        async with async_session() as session:
+            task = await get_task_by_id(session=session, task_id=task_id)
+        await callback_query.message.edit_text(f'Номер таски {task.id}\n{task.title} : {task.description}\nДата создания {f"{task.create_time.strftime('%-d %B в %H:%M') if task.create_time is not None else 'бессрочно'}"}\nВыполнить до {f"{task.time_end.strftime('%-d %B в %H:%M') if task.time_end is not None else 'бессрочно'}"}', reply_markup=done_task_kb(task_id))
+        return
+    
     async with async_session() as session:
-        for item in tasks:
-            task = await delete_task(session=session, task_id=item)
+        task = await delete_task(session=session, task_id=task_id)
     
-    if task:
-        await message.answer('Успешно!')
-    else:
-        await message.answer('Таска не найдена')
-    
-    await state.clear()
+    await callback_query.message.edit_text('Успешно.')
+
 
 
 @r.message(Command('get_stat'))
