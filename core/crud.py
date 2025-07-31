@@ -74,7 +74,8 @@ async def update_task(
     title: str = None,
     description: str = None,
     is_done: bool = None,
-    time_end: datetime = None
+    time_end: datetime = None,
+    user_id: int = None
 ):
     result = await session.execute(select(Task).where(Task.id == task_id))
     task = result.scalar_one_or_none()
@@ -86,9 +87,18 @@ async def update_task(
         task.description = description
     if is_done is not None:
         task.is_done = is_done
+    if is_done == True:
+        try:
+            s = scheduler.remove_job(str(task.id))
+        except:
+            print('У задачи не было планирования')
     if time_end is not None:
         task.time_end = time_end
-        s = scheduler.reschedule_job(str(task.id), trigger='date', run_date=time_end)
+
+        try:
+            s = scheduler.reschedule_job(str(task.id), trigger='date', run_date=time_end)
+        except:
+            s = scheduler.add_job(send_alert, 'date', run_date=time_end, args=[user_id, title], id=str(task.id))
 
     await session.commit()
     await session.refresh(task)
@@ -99,6 +109,12 @@ async def delete_task(session: AsyncSession, task_id: int):
     task = result.scalar_one_or_none()
     if not task:
         return False
+    
+    try:
+        s = scheduler.remove_job(str(task.id))
+    except:
+        print('У задачи не было планирования')
+
     await session.delete(task)
     await session.commit()
     return True

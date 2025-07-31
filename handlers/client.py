@@ -131,7 +131,7 @@ async def edit_notif(message: Message, state: FSMContext):
     task_id = data.get('task_id')
 
     async with async_session() as session:
-        await update_task(session=session, task_id=task_id, time_end=dt)
+        await update_task(session=session, task_id=task_id, time_end=dt, user_id=message.from_user.id)
         task = await get_task_by_id(session=session, task_id=task_id)
     
     await message.answer('Время окончания обновлено!')
