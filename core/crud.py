@@ -1,9 +1,10 @@
 # crud.py
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import update, delete
 from core.models import User, Task 
 from datetime import datetime
+from other.scheduler import scheduler
+from other.sendnotify import send_alert
 
 # --- USER CRUD ---
 
@@ -38,8 +39,13 @@ async def create_task(
         title=title,
         description=description,
         time_end=time_end,
-        create_time=datetime.utcnow()
+        create_time=datetime.now()
     )
+    
+    if time_end is not None:
+        s = scheduler.add_job(send_alert, 'date', run_date=time_end, args=[user_id, title])
+        print(f'Отладка = {s}')
+
     session.add(task)
     await session.commit()
     await session.refresh(task)
