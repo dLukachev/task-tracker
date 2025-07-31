@@ -41,14 +41,15 @@ async def create_task(
         time_end=time_end,
         create_time=datetime.now()
     )
-    
-    if time_end is not None:
-        s = scheduler.add_job(send_alert, 'date', run_date=time_end, args=[user_id, title])
-        print(f'Отладка = {s}')
 
     session.add(task)
     await session.commit()
     await session.refresh(task)
+
+    if time_end is not None:
+        s = scheduler.add_job(send_alert, 'date', run_date=time_end, args=[user_id, title], id=str(task.id))
+        print(f'Отладка = {s}')
+
     return task
 
 async def get_task_by_id(session: AsyncSession, task_id: int):
@@ -87,6 +88,8 @@ async def update_task(
         task.is_done = is_done
     if time_end is not None:
         task.time_end = time_end
+        s = scheduler.reschedule_job(str(task.id), trigger='date', run_date=time_end)
+
     await session.commit()
     await session.refresh(task)
     return task
