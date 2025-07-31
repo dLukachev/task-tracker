@@ -205,11 +205,12 @@ async def enter_endtime(message: Message, state: FSMContext):
         await state.update_data(time_end = None)
     else:
         dt = await parse_datetime(message.text)
+        
         if dt is None:
             await message.answer("Неверный формат даты, попробуйте снова")
             return
-
-    await state.update_data(time_end = dt)
+        
+        await state.update_data(time_end = dt)
 
     data = await state.get_data()
     async with async_session() as session:
