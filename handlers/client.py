@@ -41,7 +41,7 @@ async def get_task(message: Message):
     await message.answer(f'Вот твои задачи:')
     
     for item in tasks:
-        task = (f'Номер таски {item.id}\n{item.title} : {item.description}\nДата создания {f"{item.create_time.strftime('%-d %B в %H:%M') if item.create_time is not None else 'бессрочно'}"}\nВыполнить до {f"{item.time_end.strftime('%-d %B в %H:%M') if item.time_end is not None else 'бессрочно'}"}\n\n')
+        task = (f'{item.title} : {item.description}\nДата создания {f"{item.create_time.strftime('%-d %B в %H:%M') if item.create_time is not None else 'бессрочно'}"}\nВыполнить до {f"{item.time_end.strftime('%-d %B в %H:%M') if item.time_end is not None else 'бессрочно'}"}\n\n')
         await message.answer(task, reply_markup=done_task_kb(item.id))
 
 # ----------- Получить список всех задач -----------
@@ -60,7 +60,7 @@ async def get_done_task(message: Message):
     await message.answer(f'Вот выполненные задачи:')
 
     for item in tasks:
-        await message.answer(f'Номер таски {item.id}\n{item.title} : {item.description}\nДата создания {f"{item.create_time.strftime('%-d %B в %H:%M') if item.create_time is not None else 'бессрочно'}"}\n\n', reply_markup=not_done_task_kb(item.id))
+        await message.answer(f'{item.title} : {item.description}\nДата создания {f"{item.create_time.strftime('%-d %B в %H:%M') if item.create_time is not None else 'бессрочно'}"}\n\n', reply_markup=not_done_task_kb(item.id))
 
 # ----------- Получить список только выполенных задач -----------
 
