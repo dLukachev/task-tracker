@@ -1,7 +1,7 @@
 # crud.py
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from core.models import User, Task 
+from core.database.models import User, Task 
 from datetime import datetime
 from other.scheduler import scheduler
 from other.sendnotify import send_alert

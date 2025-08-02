@@ -1,7 +1,7 @@
 import logging, asyncio
 from aiogram import Dispatcher
 from handlers.client import r
-from core.create import init_db
+from core.database.init_base import init_db
 from other.scheduler import scheduler
 
 from core.bot import bot

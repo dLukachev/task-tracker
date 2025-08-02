@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
-from core.models import User, Task, Base
+from sqlalchemy.orm import sessionmaker
+from core.database.models import Base
 
 DATABASE_URL = "sqlite+aiosqlite:///./tasks.db"
 
